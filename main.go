@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"net"
 	"net/http"
@@ -12,21 +13,22 @@ import (
 
 var (
 	currentDir, _ = os.Getwd()
+	dir           = flag.String("d", currentDir, "port for server file")
 	port          = flag.String("p", "8000", "port for server file")
-	isHostPublic  = flag.Bool("a", false, "is hosting for public")
+	host          = flag.String("h", "localhost", "host for bind")
+	globle        = flag.Bool("g", false, "bind globle ip, like 192.168.0.1 or other loopback ip")
 )
 
 func main() {
 	flag.Parse()
-	fileDir := flag.Arg(0)
-	fileDir = os.ExpandEnv(fileDir)
+	fileDir := os.ExpandEnv(*dir)
 	fileDir, _ = filepath.Abs(fileDir)
-	host := "localhost:" + *port
-	if *isHostPublic {
-		host = LocalIP().String() + ":" + *port
+	if *host == "" && *globle {
+		*host = GlobleIP().String()
 	}
-	log.Printf("start at http://%s   dir: %s \n", host, fileDir)
-	log.Fatal(http.ListenAndServe(host, NoCache(http.FileServer(http.Dir(fileDir)))))
+	url := *host + ":" + *port
+	log.Printf("start at http://%s   dir: %s \n", url, fileDir)
+	log.Fatal(http.ListenAndServe(url, NoCache(http.FileServer(http.Dir(fileDir)))))
 }
 
 var epoch = time.Unix(0, 0).Format(time.RFC1123)
@@ -66,31 +68,26 @@ func NoCache(h http.Handler) http.Handler {
 	return http.HandlerFunc(fn)
 }
 
-func LocalIP() net.IP {
-	ip := net.IPv4(0, 0, 0, 0)
-	ifaces, err := net.Interfaces()
+func GlobleIP() net.IP {
+	addrs, err := net.InterfaceAddrs()
 	if err != nil {
-		return ip
+		fmt.Fprintln(os.Stderr, err)
+		fmt.Fprintln(os.Stderr, "get interface addrs faild, use 0.0.0.0 instend")
+		return net.IPv4zero
 	}
-	for _, i := range ifaces {
-		addrs, err := i.Addrs()
-		if err != nil {
-			return ip
-		}
-		for _, addr := range addrs {
-			switch v := addr.(type) {
-			case *net.IPNet:
-				if v.IP.To4() != nil && !v.IP.IsLoopback() {
-					ip = v.IP
-					return ip
-				}
-			case *net.IPAddr:
-				if v.IP.To4() != nil && !v.IP.IsLoopback() {
-					ip = v.IP
-					return ip
-				}
+
+	for _, addr := range addrs {
+		switch v := addr.(type) {
+		case *net.IPNet:
+			if v.IP.To4() != nil && v.IP.IsGlobalUnicast() {
+				return v.IP
+			}
+		case *net.IPAddr:
+			if v.IP.To4() != nil && v.IP.IsGlobalUnicast() {
+				return v.IP
 			}
 		}
 	}
-	return ip
+	fmt.Fprintln(os.Stderr, "not find globle ipv4, use 0.0.0.0 instend")
+	return net.IPv4zero
 }
