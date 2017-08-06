@@ -13,17 +13,17 @@ import (
 
 var (
 	currentDir, _ = os.Getwd()
-	dir           = flag.String("d", currentDir, "port for server file")
-	port          = flag.String("p", "8000", "port for server file")
-	host          = flag.String("h", "localhost", "host for bind")
-	globle        = flag.Bool("g", false, "bind globle ip, like 192.168.0.1 or other loopback ip")
+	dir           = flag.String("dir", currentDir, "port for server file")
+	port          = flag.String("port", "8000", "port for server file")
+	host          = flag.String("host", "localhost", "host for bind")
+	globle        = flag.Bool("globel", false, "default IP is 127.0.0.1, if set this flag, bind ip like 192.168.0.1 or other globle ip")
 )
 
 func main() {
 	flag.Parse()
 	fileDir := os.ExpandEnv(*dir)
 	fileDir, _ = filepath.Abs(fileDir)
-	if *host == "" && *globle {
+	if *globle {
 		*host = GlobleIP().String()
 	}
 	url := *host + ":" + *port
