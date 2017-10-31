@@ -16,15 +16,15 @@ var (
 	dir           = flag.String("dir", currentDir, "port for server file")
 	port          = flag.String("port", "8000", "port for server file")
 	host          = flag.String("host", "localhost", "host for bind")
-	globle        = flag.Bool("globel", false, "default IP is 127.0.0.1, if set this flag, bind ip like 192.168.0.1 or other globle ip")
+	global        = flag.Bool("global", false, "default IP is 127.0.0.1, if set this flag, bind ip like 192.168.0.1 or other global ip")
 )
 
 func main() {
 	flag.Parse()
 	fileDir := os.ExpandEnv(*dir)
 	fileDir, _ = filepath.Abs(fileDir)
-	if *globle {
-		*host = GlobleIP().String()
+	if *global {
+		*host = GlobalIP().String()
 	}
 	url := *host + ":" + *port
 	log.Printf("start at http://%s   dir: %s \n", url, fileDir)
@@ -68,7 +68,7 @@ func NoCache(h http.Handler) http.Handler {
 	return http.HandlerFunc(fn)
 }
 
-func GlobleIP() net.IP {
+func GlobalIP() net.IP {
 	addrs, err := net.InterfaceAddrs()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -88,6 +88,6 @@ func GlobleIP() net.IP {
 			}
 		}
 	}
-	fmt.Fprintln(os.Stderr, "not find globle ipv4, use 0.0.0.0 instend")
+	fmt.Fprintln(os.Stderr, "not find global ipv4, use 0.0.0.0 instend")
 	return net.IPv4zero
 }
