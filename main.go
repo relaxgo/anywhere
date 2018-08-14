@@ -63,6 +63,7 @@ func NoCache(h http.Handler) http.Handler {
 			w.Header().Set(k, v)
 		}
 
+		w.Header().Set("Access-Control-Allow-Origin", "*")
 		h.ServeHTTP(w, r)
 	}
 	return http.HandlerFunc(fn)
